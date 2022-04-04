@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+const fs = require('fs')
 const Wappalyzer = require('./driver')
 
 const args = process.argv.slice(2)
@@ -95,9 +95,79 @@ Options:
 
     const results = await site.analyze()
 
-    process.stdout.write(
-      `${JSON.stringify(results, null, options.pretty ? 2 : null)}\n`
+    const dependencies = []
+    results.technologies.map((t) => {
+      dependencies.push({
+        artifact_id: t.name,
+        group_id: t.name,
+        version: t.version,
+        level: 1,
+        type: 'dependency',
+        scope: '',
+        dependencies: [],
+      })
+    })
+    const websiteName = Object.keys(results.urls)[0]
+    const dependencyTree = {
+      scan_name: websiteName,
+      scan_version: '',
+      repo_url: 'N.A.',
+      scan_timestamp: new Date().toJSON(),
+      scan_buildCreationInfo: {
+        rootDir: '/',
+        repo_name: '',
+        build_time: '',
+        commit_sha: '',
+        branch: 'master',
+        repo_url: 'N.A.',
+        scan_source: 'CI',
+        scan_type: 'source_code',
+        SBD_version: '2022/01/12',
+      },
+      scan_filesOfInterest: [],
+      projects: [
+        {
+          artifact_id: websiteName,
+          group_id: websiteName,
+          version: '0.1.0',
+          level: 0,
+          type: 'user_module',
+          package_manager: {
+            package_manager: 'Yarn',
+            language: 'JavaScript',
+            working_dir: '/Users/scantist/Project/test-bom',
+            running_mode: 'normal',
+            characteristic_files: [
+              {
+                file_name: 'yarn.lock',
+                file_path: 'yarn.lock',
+              },
+              {
+                file_name: 'package.json',
+                file_path: 'package.json',
+              },
+            ],
+          },
+          dependencies,
+        },
+      ],
+    }
+    fs.writeFile(
+      'dependency-tree.json',
+      JSON.stringify(dependencyTree),
+      'utf8',
+      function (err) {
+        if (err) {
+          console.log('An error occured while writing JSON Object to File.')
+          return console.log(err)
+        }
+
+        console.log('JSON file has been saved.')
+      }
     )
+    // process.stdout.write(
+    //   `${JSON.stringify(results, null, options.pretty ? 2 : null)}\n`
+    // )
 
     await wappalyzer.destroy()
 

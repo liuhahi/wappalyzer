@@ -21,3 +21,4 @@ tags.*
 src/out.json
 
 keys.json
+dependency-tree.json
