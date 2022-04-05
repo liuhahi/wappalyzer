@@ -8,9 +8,7 @@ const Wappalyzer = require('./driver')
 const args = process.argv.slice(2)
 
 const SCANTIST_IMPORT_URL = 'https://api.scantist.io/ci-scan/'
-const SCANTISTTOKEN = process.env.SCANTISTTOKEN
-  ? process.env.SCANTISTTOKEN
-  : 'a974a766-af64-43fb-a4af-81b7b50256e3'
+let SCANTISTTOKEN = 'a974a766-af64-43fb-a4af-81b7b50256e3'
 
 const options = {}
 
@@ -37,7 +35,6 @@ const aliases = {
 while (true) {
   // eslint-disable-line no-constant-condition
   arg = args.shift()
-
   if (!arg) {
     break
   }
@@ -95,8 +92,12 @@ Options:
 
 ;(async function () {
   const wappalyzer = new Wappalyzer(options)
-
   try {
+    // check token
+    if (options.token) {
+      SCANTISTTOKEN = options.token
+    }
+
     await wappalyzer.init()
     const site = await wappalyzer.open(url)
 
