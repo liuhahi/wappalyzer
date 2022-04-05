@@ -22,18 +22,24 @@ If you don't have time to configure, host, debug and maintain your own infrastru
 ## Quick start
 
 ```sh
-git clone https://github.com/wappalyzer/wappalyzer.git
+git clone https://github.com/liuhahi/wappalyzer.git
 cd wappalyzer
 yarn install
 yarn run link
 ```
 
 ## Usage
+### JAVA version
+
+```sh
+jdk:
+- oraclejdk8
+```
 
 ### Command line
 
 ```sh
-node src/drivers/npm/cli.js https://example.com
+node src/drivers/npm/cli.js https://example.com -token=YOUR-STAGING-TOKEN
 ```
 
 ### Chrome extension
