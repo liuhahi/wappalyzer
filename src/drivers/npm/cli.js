@@ -7,8 +7,8 @@ const downloadFile = require('./helper')
 const Wappalyzer = require('./driver')
 const args = process.argv.slice(2)
 
-const SCANTIST_IMPORT_URL = 'https://api.scantist.io/ci-scan/'
-let SCANTISTTOKEN = 'a974a766-af64-43fb-a4af-81b7b50256e3'
+let SCANTIST_IMPORT_URL = 'https://api-staging.scantist.io/ci-scan/' // staging env
+let SCANTISTTOKEN = '11041986-abf0-4de4-a217-315746bb5f34' // Dini token
 
 const options = {}
 
@@ -97,6 +97,10 @@ Options:
     if (options.token) {
       SCANTISTTOKEN = options.token
     }
+    // check env
+    if (options.env == 'prod') {
+      SCANTIST_IMPORT_URL = 'https://api.scantist.io/ci-scan/'
+    }
 
     await wappalyzer.init()
     const site = await wappalyzer.open(url)
@@ -104,7 +108,9 @@ Options:
     const results = await site.analyze()
 
     const dependencyObj = {}
+    console.log('results count:', results.technologies.length);
     results.technologies.map((t) => {
+      console.log('row:', t);
       dependencyObj[t.name] = t.version ? t.version : '0'
     })
     const websiteName = Object.keys(results.urls)[0]
@@ -148,14 +154,14 @@ Options:
           console.log('An error occured while writing JSON Object to File.')
           return console.log(err)
         }
-
         console.log('JSON file has been saved.')
+        console.log('env values:', SCANTISTTOKEN, SCANTIST_IMPORT_URL)
         const child = spawn(
           'java',
-          ['-jar', jarLocation, '-f', workspacePath, '--debug'],
+          ['-jar', jarLocation, '-working_dir', workspacePath, '--debug'],
           {
             env: {
-              // ...process.env,
+              ...process.env,
               SCANTISTTOKEN,
               SCANTIST_IMPORT_URL,
             },
@@ -163,6 +169,18 @@ Options:
             detached: true,
           }
         )
+        console.log('show spawn', child.spawnargs)
+        child.stdout.on('data', (data) => {
+          console.log(`stdout: ${data}`);
+        });
+        
+        child.stderr.on('data', (data) => {
+          console.error(`stderr: ${data}`);
+        });
+        
+        child.on('close', (code) => {
+          console.log(`child process exited with code ${code}`);
+        });        
       }
     )
 
