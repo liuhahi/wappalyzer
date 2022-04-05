@@ -29,6 +29,12 @@ yarn run link
 ```
 
 ## Usage
+### JAVA version
+
+```sh
+jdk:
+- oraclejdk8
+```
 
 ### Command line
 
