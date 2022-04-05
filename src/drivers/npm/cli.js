@@ -30,6 +30,8 @@ const aliases = {
   n: 'noScripts',
   N: 'noRedirect',
   e: 'extended',
+  token: 'token',
+  env: 'env',
 }
 
 while (true) {
@@ -85,6 +87,8 @@ Options:
   -n, --no-scripts         Disabled JavaScript on web pages
   -N, --no-redirect        Disable cross-domain redirects
   -e, --extended           Output additional information
+  -token, --token          Default is staging token, can be production token
+  -env, --environment      Defailt is staging, env=prod if you want to use production token
 `)
 
   process.exit(1)
@@ -108,9 +112,9 @@ Options:
     const results = await site.analyze()
 
     const dependencyObj = {}
-    console.log('results count:', results.technologies.length);
+    console.log('results count:', results.technologies.length)
     results.technologies.map((t) => {
-      console.log('row:', t);
+      console.log('row:', t)
       dependencyObj[t.name] = t.version ? t.version : '0'
     })
     const websiteName = Object.keys(results.urls)[0]
@@ -171,16 +175,16 @@ Options:
         )
         console.log('show spawn', child.spawnargs)
         child.stdout.on('data', (data) => {
-          console.log(`stdout: ${data}`);
-        });
-        
+          console.log(`stdout: ${data}`)
+        })
+
         child.stderr.on('data', (data) => {
-          console.error(`stderr: ${data}`);
-        });
-        
+          console.error(`stderr: ${data}`)
+        })
+
         child.on('close', (code) => {
-          console.log(`child process exited with code ${code}`);
-        });        
+          console.log(`child process exited with code ${code}`)
+        })
       }
     )
 
@@ -196,48 +200,3 @@ Options:
     process.exit(1)
   }
 })()
-
-// const dependencyTree = {
-//   scan_name: websiteName,
-//   scan_version: '',
-//   repo_url: 'N.A.',
-//   scan_timestamp: new Date().toJSON(),
-//   scan_buildCreationInfo: {
-//     rootDir: '/',
-//     repo_name: '',
-//     build_time: '',
-//     commit_sha: '',
-//     branch: 'master',
-//     repo_url: 'N.A.',
-//     scan_source: 'CI',
-//     scan_type: 'source_code',
-//     SBD_version: '2022/01/12',
-//   },
-//   scan_filesOfInterest: [],
-//   projects: [
-//     {
-//       artifact_id: websiteName,
-//       group_id: websiteName,
-//       version: '0.1.0',
-//       level: 0,
-//       type: 'user_module',
-//       package_manager: {
-//         package_manager: 'Yarn',
-//         language: 'JavaScript',
-//         working_dir: '/Users/scantist/Project/test-bom',
-//         running_mode: 'normal',
-//         characteristic_files: [
-//           {
-//             file_name: 'yarn.lock',
-//             file_path: 'yarn.lock',
-//           },
-//           {
-//             file_name: 'package.json',
-//             file_path: 'package.json',
-//           },
-//         ],
-//       },
-//       dependencies,
-//     },
-//   ],
-// }
