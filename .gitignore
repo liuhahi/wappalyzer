@@ -22,3 +22,6 @@ src/out.json
 
 keys.json
 dependency-tree.json
+results/*
+scantist_report.log
+scantist-bom-detect.jar

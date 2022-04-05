@@ -1,8 +1,16 @@
 #!/usr/bin/env node
+const { spawn } = require('child_process')
 const fs = require('fs')
+const { dirname } = require('path')
+const path = require('path')
+const downloadFile = require('./helper')
 const Wappalyzer = require('./driver')
-
 const args = process.argv.slice(2)
+
+const SCANTIST_IMPORT_URL = 'https://api.scantist.io/ci-scan/'
+const SCANTISTTOKEN = process.env.SCANTISTTOKEN
+  ? process.env.SCANTISTTOKEN
+  : 'a974a766-af64-43fb-a4af-81b7b50256e3'
 
 const options = {}
 
@@ -90,71 +98,49 @@ Options:
 
   try {
     await wappalyzer.init()
-
     const site = await wappalyzer.open(url)
 
     const results = await site.analyze()
 
-    const dependencies = []
+    const dependencyObj = {}
     results.technologies.map((t) => {
-      dependencies.push({
-        artifact_id: t.name,
-        group_id: t.name,
-        version: t.version,
-        level: 1,
-        type: 'dependency',
-        scope: '',
-        dependencies: [],
-      })
+      dependencyObj[t.name] = t.version ? t.version : '0'
     })
     const websiteName = Object.keys(results.urls)[0]
-    const dependencyTree = {
-      scan_name: websiteName,
-      scan_version: '',
-      repo_url: 'N.A.',
-      scan_timestamp: new Date().toJSON(),
-      scan_buildCreationInfo: {
-        rootDir: '/',
-        repo_name: '',
-        build_time: '',
-        commit_sha: '',
-        branch: 'master',
-        repo_url: 'N.A.',
-        scan_source: 'CI',
-        scan_type: 'source_code',
-        SBD_version: '2022/01/12',
-      },
-      scan_filesOfInterest: [],
-      projects: [
-        {
-          artifact_id: websiteName,
-          group_id: websiteName,
-          version: '0.1.0',
-          level: 0,
-          type: 'user_module',
-          package_manager: {
-            package_manager: 'Yarn',
-            language: 'JavaScript',
-            working_dir: '/Users/scantist/Project/test-bom',
-            running_mode: 'normal',
-            characteristic_files: [
-              {
-                file_name: 'yarn.lock',
-                file_path: 'yarn.lock',
-              },
-              {
-                file_name: 'package.json',
-                file_path: 'package.json',
-              },
-            ],
-          },
-          dependencies,
-        },
-      ],
+    const packageJsonFile = {
+      name: websiteName,
+      version: '0.1.0',
+      dependencies: dependencyObj,
     }
+    let websiteFolderName = websiteName.replace('https://', '')
+    websiteFolderName = websiteFolderName.replace('http://', '')
+    websiteFolderName = websiteFolderName.split('/')[0]
+    const appDir = dirname(require.main.filename)
+    const jarLocation = appDir.replace(
+      'src/drivers/npm',
+      'scantist-bom-detect.jar'
+    )
+    // create results folder for scans if not exist
+    const resultsFolder = appDir.replace('src/drivers/npm', 'results')
+    if (!fs.existsSync(resultsFolder)) {
+      fs.mkdirSync(resultsFolder)
+    }
+    // create website folder if not exist
+    const workspacePath = path.join(resultsFolder, websiteFolderName) + '/'
+    if (!fs.existsSync(workspacePath)) {
+      fs.mkdirSync(workspacePath)
+    }
+    // download bom detector
+    try {
+      const result = await downloadFile(jarLocation)
+      console.log(result)
+    } catch (err) {
+      console.log(err)
+    }
+    // write website json file
     fs.writeFile(
-      'dependency-tree.json',
-      JSON.stringify(dependencyTree),
+      path.join(workspacePath, 'package.json'),
+      JSON.stringify(packageJsonFile),
       'utf8',
       function (err) {
         if (err) {
@@ -163,11 +149,21 @@ Options:
         }
 
         console.log('JSON file has been saved.')
+        const child = spawn(
+          'java',
+          ['-jar', jarLocation, '-f', workspacePath, '--debug'],
+          {
+            env: {
+              // ...process.env,
+              SCANTISTTOKEN,
+              SCANTIST_IMPORT_URL,
+            },
+            cwd: workspacePath,
+            detached: true,
+          }
+        )
       }
     )
-    // process.stdout.write(
-    //   `${JSON.stringify(results, null, options.pretty ? 2 : null)}\n`
-    // )
 
     await wappalyzer.destroy()
 
@@ -181,3 +177,48 @@ Options:
     process.exit(1)
   }
 })()
+
+// const dependencyTree = {
+//   scan_name: websiteName,
+//   scan_version: '',
+//   repo_url: 'N.A.',
+//   scan_timestamp: new Date().toJSON(),
+//   scan_buildCreationInfo: {
+//     rootDir: '/',
+//     repo_name: '',
+//     build_time: '',
+//     commit_sha: '',
+//     branch: 'master',
+//     repo_url: 'N.A.',
+//     scan_source: 'CI',
+//     scan_type: 'source_code',
+//     SBD_version: '2022/01/12',
+//   },
+//   scan_filesOfInterest: [],
+//   projects: [
+//     {
+//       artifact_id: websiteName,
+//       group_id: websiteName,
+//       version: '0.1.0',
+//       level: 0,
+//       type: 'user_module',
+//       package_manager: {
+//         package_manager: 'Yarn',
+//         language: 'JavaScript',
+//         working_dir: '/Users/scantist/Project/test-bom',
+//         running_mode: 'normal',
+//         characteristic_files: [
+//           {
+//             file_name: 'yarn.lock',
+//             file_path: 'yarn.lock',
+//           },
+//           {
+//             file_name: 'package.json',
+//             file_path: 'package.json',
+//           },
+//         ],
+//       },
+//       dependencies,
+//     },
+//   ],
+// }
